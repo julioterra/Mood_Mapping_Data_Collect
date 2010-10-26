@@ -6,6 +6,8 @@
 
 // GLOBAL VARIABLES
 byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
+unsigned long intervalTime = 150;
+unsigned long previousPause;
 
 // heart rate variables
 int numEntries = 3;               // Number of HR values to request 
@@ -19,78 +21,65 @@ byte i2cAnalogArray[1];           // I2C response array for analog values, sized
 // pin assignments
 // analog pins 4 and 5 are used for wire connection to HRMI
 int gsrPin = 0;
-int buttonPin1 = 2;
-int buttonPin2 = 3;
+int buttonPin[2] = {2, 3};    
 int ledPin = 4;
 
 int gsrVal = 0;
-int buttonVal1 = 0;
-int buttonVal2 = 0;
+int buttonVal[2] = {0, 0};
 int ledVal = 0;
+
+// button process variables
+long intervalMin = 2000;
+long intervalMax = 2000;
+unsigned long intervalCurrent[] = {0, 0};
+int previousState[] = {LOW, LOW};
+boolean checkRead[2][3] = {false, false, false, false, false, false};
+boolean positveNegative[] = {false, false};
 
 
 void setup() {
   hrmi_open();                                                           // Initialize the I2C communication 
   Serial.begin(HRMI_HOST_BAUDRATE);                                      // Initialize the serial interface 
+  previousPause = millis();
 
-  pinMode(buttonPin1, INPUT);
-  pinMode(buttonPin2, INPUT);
+  pinMode(buttonPin[0], INPUT);
+  pinMode(buttonPin[1], INPUT);
   pinMode(ledPin, OUTPUT);
 
   // Print to serial the title of each data column
   Serial.print("time, ");
   Serial.print("gsr, "); 
-  Serial.print("accel x, accel y, accel z, "); 
   Serial.print("heart beat, ");
+  Serial.print("accel x, accel y, accel z, "); 
   Serial.print("button 1, ");
   Serial.print("button 2, ");
   delay(1000);
 }
 
 
-
-/* * Arduino main code loop */
+/** LOOP FUNCTION **/
 void loop() {
 
-  // print time in milliseconds
-  Serial.print(millis());
-  Serial.print(", ");
 
-  // read data and print to serial
-  gsrRead();  
-  Serial.print(", ");
+  for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
+  controlLights();  
 
-  for (int i = 0; i < 3; i++) { 
-    analogInputRead(i);
-    Serial.print(", "); 
- }
-
-  heartBeatRead();
-  Serial.print(", "); 
-
-  buttonVal1 = digitalRead(buttonPin1);
-  Serial.print(buttonVal1);
-  Serial.print(", "); 
-
-  buttonVal2 = digitalRead(buttonPin2);
-  Serial.print(buttonVal2);
-
-  Serial.println(';'); 
-
-  // turn on light if either button pressed
-  if (buttonVal1 == HIGH || buttonVal2 == HIGH) {
-    digitalWrite(ledPin, HIGH);
-  } else {
-    digitalWrite(ledPin, LOW);
+  // if ready2read equals true then read heart rate and gsr data and print all data to serial 
+  if (ready2read) {
+    timeReadWrite();
+    gsrReadWrite();  
+    heartBeatReadWrite();
+    for (int i = 0; i < 3; i++) { analogInputReadWrite(i); }
+    for (int i = 0; i < 2; i++) { buttonReadWrite(i); }
+    Serial.println(); 
   }
 
-  delay(150);        // Delay 150 milliseconds between commands
+
 }
 
-
-
-
-
-
-
-
+boolean ready2read () {
+  if (millis() - previousPause > intervalTime) {
+      previousPause = millis();
+      return true;
+  } else { return false; }
+}
