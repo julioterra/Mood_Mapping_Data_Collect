@@ -6,7 +6,6 @@
 void gsrRead() {
     gsrVal = analogRead(gsrPin);
     Serial.print(gsrVal);
-    Serial.print(", ");
 }
 
 // Heart Rate: read and print
@@ -33,7 +32,6 @@ void analogInputRead(int _inputNumber){
     if (hrmiGetData(hrmi_addr, accelRspBytes, i2cAnalogArray) != -1) {
        Serial.print(byte(_inputNumber));
        Serial.print(i2cAnalogArray[0], DEC);
-       Serial.print(", "); 
     }
 }
 
