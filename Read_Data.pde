@@ -85,7 +85,7 @@ void buttonsReadProcess (int buttonNum) {
 
   // checks if the button press requirements have been met for either positive or negative emotions and sets proper variables
   if(checkRead[buttonNum][0] == true && checkRead[buttonNum][1] == true && checkRead[buttonNum][2] == true) {
-      positveNegative[buttonNum] = true;
+      positiveNegative[buttonNum] = true;
       for (int j = 0; j < 4; j++) checkRead[buttonNum][j] = false; 
       intervalCurrent[buttonNum] = 0;
   }

@@ -1,7 +1,10 @@
 #include "Wire.h" 
+#include <NewSoftSerial.h>
+#include <TinyGPS.h>
 
 // GLOBAL CONSTANTS
-#define HRMI_HOST_BAUDRATE   9600  // data rate of connection between Arduino and computer
+#define SERIAL_BAUDRATE      9600  // data rate of connection between Arduino and computer
+#define GPS_SERIAL_BAUDRATE  4800  // data rate of connection between Arduino and computer
 #define HRMI_I2C_ADDR        127   // IC2 address of the HRMI interface
 
 // GLOBAL VARIABLES
@@ -21,8 +24,9 @@ byte i2cAnalogArray[1];           // I2C response array for analog values, sized
 // pin assignments
 // analog pins 4 and 5 are used for wire connection to HRMI
 int gsrPin = 0;
-int buttonPin[2] = {2, 3};    
+int buttonPin[2] = {13, 3};   
 int ledPin = 4;
+int vibratePin = 6;
 
 int gsrVal = 0;
 int buttonVal[2] = {0, 0};
@@ -34,17 +38,27 @@ long intervalMax = 2000;
 unsigned long intervalCurrent[] = {0, 0};
 int previousState[] = {LOW, LOW};
 boolean checkRead[2][3] = {false, false, false, false, false, false};
-boolean positveNegative[] = {false, false};
+boolean positiveNegative[] = {false, false};
+
+// GPS Variables
+TinyGPS gps;
+NewSoftSerial nss(2, 12);
+
+void gpsdump(TinyGPS &gps);
+bool feedgps();
+void printFloat(double f, int digits = 2);
 
 
 void setup() {
   hrmi_open();                                                           // Initialize the I2C communication 
-  Serial.begin(HRMI_HOST_BAUDRATE);                                      // Initialize the serial interface 
+  Serial.begin(SERIAL_BAUDRATE);                                      // Initialize the serial interface 
+  nss.begin(GPS_SERIAL_BAUDRATE);
   previousPause = millis();
 
   pinMode(buttonPin[0], INPUT);
   pinMode(buttonPin[1], INPUT);
   pinMode(ledPin, OUTPUT);
+  pinMode(vibratePin, OUTPUT);
 
   // Print to serial the title of each data column
   Serial.print("time, ");
@@ -59,7 +73,8 @@ void setup() {
 
 /** LOOP FUNCTION **/
 void loop() {
-
+  bool newdata = false;
+  unsigned long start = millis();
 
   for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
   controlLights();  
@@ -74,8 +89,8 @@ void loop() {
     Serial.println(); 
   }
 
-
 }
+
 
 boolean ready2read () {
   if (millis() - previousPause > intervalTime) {
