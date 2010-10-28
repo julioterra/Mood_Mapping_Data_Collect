@@ -76,6 +76,19 @@ void loop() {
   bool newdata = false;
   unsigned long start = millis();
 
+  // Every 5 seconds we print an update
+  if (millis() - start > 2000) {
+      if (feedgps()) newdata = true;
+  }
+  
+//  if (newdata) {
+      Serial.println("Acquired Data");
+      Serial.println("-------------");
+      gpsdump(gps);
+      Serial.println("-------------");
+      Serial.println();
+//    } else { Serial.println("no new data"); }
+
   for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
   controlLights();  
 
