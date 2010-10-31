@@ -1,6 +1,57 @@
-#include "Wire.h" 
+#include <Wire.h> 
 #include <NewSoftSerial.h>
-#include <TinyGPS.h>
+
+
+#define rateRequestIDFirst       9
+#define rateRequestIDSecond      10
+#define rateRequestMode          13
+#define rateRequestRateFirst     15
+#define rateRequestRateSecond    16
+
+#define GGAtimeLoc               7
+#define GGAlattitudeLoc          18
+#define GGAlongitudeLoc          30
+#define GGAfixValidLoc           43
+
+class gpsConnect {
+    NewSoftSerial mySerial;
+   
+    // variables for reading in data from GPS
+    char nmeaMsg[300];
+    int msgIndex;
+    char checksumMsg[2];
+    int checksumIndex;
+    boolean msgStart;
+    boolean msgEnd;
+    
+  public:
+    // variables for printing out data from GPS
+    char lattitude[11];
+    char longitude[12];
+    char timeStamp[10];
+    boolean locValid;
+    char lastValidReading[10];
+
+    gpsConnect(byte rxPin, byte txPin) : mySerial(rxPin, txPin){  }
+    void setupGPS(int);
+    void run();
+    void publishMsg(char[], int);
+    void printMsg(char[], int );
+    void requestMsg(char );
+    void changeRateMsg(char, int );    
+
+  
+  private:
+    int get_checksum(char*, int);
+    void checksum_hex_to_ascii(int, char*);
+    boolean confirm_checksum(char*, int);
+    void read_msg(char);
+    void parse_msg();
+    void parse_element(int, char*, int);
+    void print_gps_data();
+    void sendMsg(char, int, int);
+
+};
 
 // GLOBAL CONSTANTS
 #define SERIAL_BAUDRATE      9600  // data rate of connection between Arduino and computer
@@ -10,7 +61,7 @@
 // GLOBAL VARIABLES
 byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
 unsigned long intervalTime = 150;
-unsigned long previousPause;
+unsigned long intervalStart;
 
 // heart rate variables
 int numEntries = 3;               // Number of HR values to request 
@@ -27,6 +78,7 @@ int gsrPin = 0;
 int buttonPin[2] = {13, 3};   
 int ledPin = 4;
 int vibratePin = 6;
+int gpsPin[2] = {2, 12};
 
 int gsrVal = 0;
 int buttonVal[2] = {0, 0};
@@ -41,24 +93,21 @@ boolean checkRead[2][3] = {false, false, false, false, false, false};
 boolean positiveNegative[] = {false, false};
 
 // GPS Variables
-TinyGPS gps;
-NewSoftSerial nss(2, 12);
-
-void gpsdump(TinyGPS &gps);
-bool feedgps();
-void printFloat(double f, int digits = 2);
-
+gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
+unsigned long gpsStart;
 
 void setup() {
   hrmi_open();                                                           // Initialize the I2C communication 
   Serial.begin(SERIAL_BAUDRATE);                                      // Initialize the serial interface 
-  nss.begin(GPS_SERIAL_BAUDRATE);
-  previousPause = millis();
+  myGPS.setupGPS(GPS_SERIAL_BAUDRATE);
 
   pinMode(buttonPin[0], INPUT);
   pinMode(buttonPin[1], INPUT);
   pinMode(ledPin, OUTPUT);
   pinMode(vibratePin, OUTPUT);
+
+  intervalStart = millis();
+  gpsStart = millis();
 
   // Print to serial the title of each data column
   Serial.print("time, ");
@@ -73,27 +122,12 @@ void setup() {
 
 /** LOOP FUNCTION **/
 void loop() {
-  bool newdata = false;
-  unsigned long start = millis();
-
-  // Every 5 seconds we print an update
-  if (millis() - start > 2000) {
-      if (feedgps()) newdata = true;
-  }
-  
-//  if (newdata) {
-      Serial.println("Acquired Data");
-      Serial.println("-------------");
-      gpsdump(gps);
-      Serial.println("-------------");
-      Serial.println();
-//    } else { Serial.println("no new data"); }
 
   for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
-  controlLights();  
+  controlLights();    
 
   // if ready2read equals true then read heart rate and gsr data and print all data to serial 
-  if (ready2read) {
+  if (ready2read()) {
     timeReadWrite();
     gsrReadWrite();  
     heartBeatReadWrite();
@@ -101,13 +135,13 @@ void loop() {
     for (int i = 0; i < 2; i++) { buttonReadWrite(i); }
     Serial.println(); 
   }
-
+  myGPS.run();
 }
 
 
 boolean ready2read () {
-  if (millis() - previousPause > intervalTime) {
-      previousPause = millis();
+  if (millis() - intervalStart > intervalTime) {
+      intervalStart = millis();
       return true;
   } else { return false; }
 }
