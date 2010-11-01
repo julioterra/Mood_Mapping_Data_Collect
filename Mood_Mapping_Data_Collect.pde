@@ -17,6 +17,8 @@
 #define GGAlongitudeLoc          30
 #define GGAfixValidLoc           43
 
+#define heartRateThreshold       95
+
 // GPS CONNECT CLASS: Reads and parses data from the GPS unit
 class gpsConnect {
     NewSoftSerial mySerial;
@@ -61,7 +63,7 @@ class gpsConnect {
 // GLOBAL VARIABLES
 byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
 unsigned long currentTime = millis();
-unsigned long intervalTime = 100;
+unsigned long intervalTime = 200;
 unsigned long intervalStart;
 
 // heart rate variables
@@ -72,6 +74,11 @@ int HRCount = -1;
 byte accelCommand = 'A';
 int accelRspBytes;               // Number of analog sensor response bytes
 byte i2cAnalogArray[1];           // I2C response array for analog values, sized for single reading 
+
+// Variables that control the heart rate alert (lights and vibrator)
+boolean heartRateAlert = false;
+long unsigned previousHeartRateAlert = 0;
+long unsigned heartRateAlertInterval = 3600000;
 
 // pin assignments
 // analog pins 4 and 5 are used for wire connection to HRMI
@@ -86,14 +93,23 @@ int buttonVal[2] = {0, 0};
 int ledVal = 0;
 
 // button process variables
-long intervalMin = 1500;
-long intervalMax = 6000;
-unsigned long intervalCurrent[] = {0, 0};
-long emotionRecordTime = 0; 
-long emotionReportTime = 1000;
-int previousState[] = {LOW, LOW};
-int checkRead[2][3] = {0, 0, 0, 0, 0, 0};
-boolean positiveNegative[] = {false, false};
+long intervalMin = 1500;                      // minimum length of time between the button-presses used to capture emotions 
+long intervalMax = 4500;                      // maximum length of time between the button-presses used to capture emotions 
+unsigned long intervalCurrent[] = {0, 0};     // time when last button-press related event happenned
+int previousState[] = {LOW, LOW};             // previous of button for capturing button-press events
+int checkRead[2][3] = {0, 0, 0, 0, 0, 0};     // holds status of individual button-press events to confirm if full sequence has been done correctly
+boolean positiveNegative[] = {false, false};  // holds whether button press event has been accomplished fully
+long emotionRecordTime = 0;                   // time when emotion activity was recorded (button-press sequence successfully completed)
+long emotionReportTime = 1000;                // length of time that emotion flag should be displayed
+
+// light and vibration control variables
+long lightVibPulseLength = 400;                     // length of light and vibrarion pulse when a button-push sequence is recorded
+long previousLightVibPulse = 0;
+int lightVibCount = 0;
+int lightVibConfirmCount = 4;
+int lightVibRequestCount = 10;
+boolean lightVibConfirmStart = false;
+boolean vibPulseState = false;
 
 // GPS Variables
 gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
@@ -123,7 +139,6 @@ void setup() {
 
 /** LOOP FUNCTION **/
 void loop() {
-
   timeRead();
   myGPS.readGPS();
   for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }

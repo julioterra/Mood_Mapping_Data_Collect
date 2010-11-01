@@ -2,25 +2,49 @@
  * BEGIN DATA PROCESSING FUNCTIONS - begin functions that process and outputs data from arduino
  *********/
 
-
 void controlLights () {
-  // turn on light if either button pressed
-  if (buttonVal[0] == HIGH || buttonVal[1] == HIGH) {
-    digitalWrite(ledPin, HIGH);
-  } else {
-    digitalWrite(ledPin, LOW);
+  if (heartRateAlert) {
+      if (light_vibration_alert(lightVibRequestCount)) {
+          heartRateAlert = false;  
+      }    
   }
-  
-  // New Logic Notes:
-  
-  // if heart rate or galvanic skin response exceeds a given threshold 
-      // make lights blink on and off every second until one of the following things happens
-          // 1. user inputs a positive or negative emotion selection
-          // 2. the heart rate or galvanic skin response dips below the threshold
-      // only request another response if the vitals have gone below threshold and at least 30 minutes have passed
-          
-  // if a new positive or negative emotion reading is captured then
-      // blink button three times a second for 5 seconds
+
+  if (lightVibConfirmStart) {
+      if (light_vibration_alert(lightVibConfirmCount)) {
+          lightVibConfirmStart = false;  
+      }
+   }
+}
+
+
+// LIGHT VIBRATION ALERT FUNCTION
+boolean light_vibration_alert(int totalPulses) {
+    if (lightVibCount == 0) {
+        previousLightVibPulse = currentTime;
+        digitalWrite(ledPin, HIGH);
+        digitalWrite(vibratePin, HIGH);
+        vibPulseState = true;
+        lightVibCount++;
+    } else if (lightVibCount < totalPulses) {
+        if (currentTime - previousLightVibPulse > lightVibPulseLength) {
+           if (vibPulseState) {
+                digitalWrite(ledPin, LOW);
+                digitalWrite(vibratePin, LOW);
+                vibPulseState = false;
+                previousLightVibPulse = currentTime;
+              } else { 
+                digitalWrite(ledPin, HIGH);
+                digitalWrite(vibratePin, HIGH);
+                vibPulseState = true;
+                previousLightVibPulse = currentTime;
+             }
+             lightVibCount++;
+       }
+    } else { 
+         lightVibCount = 0; 
+         return true;
+    }
+    return false;
 }
 
 
@@ -41,6 +65,25 @@ void print_titles() {
 }
 
 
+// BUTTON WRITE: read and print
+void buttonWrite (int buttonNum) {
+  if(positiveNegative[buttonNum]) {
+     if (buttonNum == 0) { Serial.print("P"); }
+     if(buttonNum == 1) { Serial.print("N"); }
+     lightVibConfirmStart = true;
+  } else { Serial.print("0"); }
+  Serial.print(", "); 
+  if (currentTime - emotionRecordTime > emotionReportTime) {positiveNegative[buttonNum] = false;}
+}
+
+
+void timeWrite() {
+    Serial.print(currentTime);
+    Serial.print(", ");
+}
+
+
+// PRINT GPS DATA: print the gps data to the serial port
 void print_gps_data() {
     // print all data elements on the serial port
     if (myGPS.newData) {

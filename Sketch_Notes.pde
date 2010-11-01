@@ -1,6 +1,6 @@
 /***************************************************************
- *
  * MOOD MAPPER - Heart Rate, Accelerometer & GSR Sensor Readings
+ * Created by: Julio Terra
  *
  * I2C CONNECTION DETAILS:  
  * +5            +5 (Power for the HRMI)
@@ -12,4 +12,18 @@
  *     I2C read of 32 bytes. The Get Heartrate command is limited
  *     by this code to a maximum of 30 values (for a max I2C packet of 32 bytes).
  *
+ *
+ * What it tracks?
+ *
+ *
+ * Embedded alerts?
+ *
+ *
+ * Button sequence
+ * 
+ *
+ * 
+ * 
+ *
+
  ***************************************************************/

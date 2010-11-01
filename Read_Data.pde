@@ -7,11 +7,6 @@ void timeRead() {
     currentTime = millis();
 }
 
-void timeWrite() {
-    Serial.print(currentTime);
-    Serial.print(", ");
-}
-
 
 // GSR READ WRITE: read and print
 void gsrReadWrite() {
@@ -33,6 +28,12 @@ void heartBeatReadWrite() {
       } else { Serial.print(0, DEC); }                  // if heart beat count does equal count of current heart rate than print "0"
     Serial.print(", "); 
     } 
+    if (i2cRspArray[2] > heartRateThreshold) {
+      if (currentTime - previousHeartRateAlert > heartRateAlertInterval || previousHeartRateAlert == 0) {
+          heartRateAlert = true;
+          previousHeartRateAlert = currentTime;
+      }
+    }
 }
 
 
@@ -107,17 +108,6 @@ void buttonsReadProcess (int buttonNum) {
       for (int j = 0; j < 3; j++) checkRead[buttonNum][j] = 0; 
       intervalCurrent[buttonNum] = 0;
   }
-}
-
-
-
-// BUTTON WRITE: read and print
-void buttonWrite (int buttonNum) {
-  if(positiveNegative[buttonNum] && buttonNum == 0) { Serial.print("P"); }
-  else if(positiveNegative[buttonNum] && buttonNum == 1) { Serial.print("N"); }
-  else { Serial.print("0"); }
-  Serial.print(", "); 
-  if (currentTime - emotionRecordTime > emotionReportTime) {positiveNegative[buttonNum] = false;}
 }
 
 /*********
