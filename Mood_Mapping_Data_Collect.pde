@@ -61,7 +61,7 @@ class gpsConnect {
 // GLOBAL VARIABLES
 byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
 unsigned long currentTime = millis();
-unsigned long intervalTime = 75;
+unsigned long intervalTime = 100;
 unsigned long intervalStart;
 
 // heart rate variables
@@ -89,6 +89,8 @@ int ledVal = 0;
 long intervalMin = 1500;
 long intervalMax = 6000;
 unsigned long intervalCurrent[] = {0, 0};
+long emotionRecordTime = 0; 
+long emotionReportTime = 1000;
 int previousState[] = {LOW, LOW};
 int checkRead[2][3] = {0, 0, 0, 0, 0, 0};
 boolean positiveNegative[] = {false, false};
@@ -128,17 +130,15 @@ void loop() {
   controlLights();    
 
   // if ready2read equals true then read heart rate and gsr data and print all data to serial 
-  /*
   if (ready2read()) {
     timeWrite();
     gsrReadWrite();  
     heartBeatReadWrite();
     for (int i = 0; i < 3; i++) { analogInputReadWrite(i); }
-    for (int i = 0; i < 2; i++) { buttonReadWrite(i); }    
+    for (int i = 0; i < 2; i++) { buttonWrite(i); }
     print_gps_data();
     Serial.println(); 
   }
-  */
 
 
 }

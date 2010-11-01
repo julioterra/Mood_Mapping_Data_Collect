@@ -64,93 +64,61 @@ void buttonsReadProcess (int buttonNum) {
       // if no logic requirements had been met then start the interval counter
       previousState[buttonNum] = HIGH; 
       int intervalActual = currentTime - intervalCurrent[buttonNum];
-      
-Serial.print("Button Pressed - ");         
-Serial.println(intervalActual);
-
       if (checkRead[buttonNum][0] == 0) { 
           intervalCurrent[buttonNum] = currentTime; 
-
-for (int j = 0; j < 3; j++) { Serial.print(checkRead[buttonNum][j]); Serial.print(" , "); } 
-Serial.println("start countdown #1");
-
         }
+
       // if the first button requirement has been met and the interval time meets requirements
       else if (checkRead[buttonNum][0] == 1 && intervalActual >= intervalMin && intervalActual <= intervalMax) {
           checkRead[buttonNum][1] = 1;
           intervalCurrent[buttonNum] = currentTime;
 
-for (int j = 0; j < 3; j++) { Serial.print(checkRead[buttonNum][j]); Serial.print(" , "); } 
-Serial.println("Second Met, start countdown #3 ");
-
       // otherwise re-initialize the requirements array and interval time counter
       } else {
           for (int j = 0; j < 3; j++) checkRead[buttonNum][j] = 0; 
           intervalCurrent[buttonNum] = 0;
-
-Serial.println("Re-init");
-
       }  
         
   // if button has just been released
   } else if (buttonVal[buttonNum] == LOW && previousState[buttonNum] == HIGH) { 
       previousState[buttonNum] = LOW; 
       int intervalActual = currentTime - intervalCurrent[buttonNum];
-      
-Serial.print("Button Released ");
-Serial.println(intervalActual);
 
       // if the first requirement is not set to true and the interval time meets requirements
       if (checkRead[buttonNum][0] == 0 && intervalActual >= intervalMin && intervalActual <= intervalMax) {
           checkRead[buttonNum][0] = 1;
           intervalCurrent[buttonNum] = currentTime;
 
-for (int j = 0; j < 3; j++) { Serial.print(checkRead[buttonNum][j]); Serial.print(" , "); } 
-Serial.println("First Met, start countdown #2");
-
       // if the second requirement is not set to true and the interval time meets requirements
       } else if (checkRead[buttonNum][1] == 1 && intervalActual >= intervalMin && intervalActual <= intervalMax) {
           checkRead[buttonNum][2] = 1;
-
-for (int j = 0; j < 3; j++) { Serial.print(checkRead[buttonNum][j]); Serial.print(" , "); } 
-Serial.println("Last met ");
 
       // otherwise re-initialize the requirements array and interval time counter
       } else { 
           for (int j = 0; j < 3; j++) checkRead[buttonNum][j] = 0; 
           intervalCurrent[buttonNum] = 0;
-
-Serial.println("Re-init");
-
       }  
   }
 
   // checks if the button press requirements have been met for either positive or negative emotions and sets proper variables
   if(checkRead[buttonNum][0] == 1 && checkRead[buttonNum][1] == 1 && checkRead[buttonNum][2] == 1) {
-
-Serial.println("PRESSED THE BUTTONS");
-
       positiveNegative[buttonNum] = true;
+      emotionRecordTime = currentTime;
       for (int j = 0; j < 3; j++) checkRead[buttonNum][j] = 0; 
       intervalCurrent[buttonNum] = 0;
   }
 }
 
 
+
 // BUTTON WRITE: read and print
 void buttonWrite (int buttonNum) {
-  Serial.print(positiveNegative[buttonNum]);
+  if(positiveNegative[buttonNum] && buttonNum == 0) { Serial.print("P"); }
+  else if(positiveNegative[buttonNum] && buttonNum == 1) { Serial.print("N"); }
+  else { Serial.print("0"); }
   Serial.print(", "); 
-  positiveNegative[buttonNum] = false;
+  if (currentTime - emotionRecordTime > emotionReportTime) {positiveNegative[buttonNum] = false;}
 }
-
-
-void buttonReadWrite (int buttonNum) {
-  buttonVal[buttonNum] = digitalRead(buttonPin[buttonNum]);
-  Serial.print(buttonVal[buttonNum]);
-  Serial.print(", "); 
-}
-
 
 /*********
  * END DATA FUNCTIONS - end functions that read data from arduino
