@@ -1,6 +1,10 @@
 #include <Wire.h> 
 #include <NewSoftSerial.h>
 
+// GLOBAL CONSTANTS
+#define SERIAL_BAUDRATE          9600  // data rate of connection between Arduino and computer
+#define GPS_SERIAL_BAUDRATE      4800  // data rate of connection between Arduino and computer
+#define HRMI_I2C_ADDR            127   // IC2 address of the HRMI interface
 
 #define rateRequestIDFirst       9
 #define rateRequestIDSecond      10
@@ -13,9 +17,28 @@
 #define GGAlongitudeLoc          30
 #define GGAfixValidLoc           43
 
+// GPS CONNECT CLASS: Reads and parses data from the GPS unit
 class gpsConnect {
     NewSoftSerial mySerial;
    
+  public:
+    // variables for printing out data from GPS
+    char lattitude[11];
+    char longitude[12];
+    char timeStamp[10];
+    boolean locValid;
+    char lastValidReading[10];
+    boolean newData;
+
+    gpsConnect(byte rxPin, byte txPin) : mySerial(rxPin, txPin){  }
+    void setupGPS(int);
+    void readGPS();
+    void publishMsg(char[], int);
+    void printMsg(char[], int );
+    void requestMsg(char );
+    void changeRateMsg(char, int );    
+  
+  private:
     // variables for reading in data from GPS
     char nmeaMsg[300];
     int msgIndex;
@@ -24,24 +47,6 @@ class gpsConnect {
     boolean msgStart;
     boolean msgEnd;
     
-  public:
-    // variables for printing out data from GPS
-    char lattitude[11];
-    char longitude[12];
-    char timeStamp[10];
-    boolean locValid;
-    char lastValidReading[10];
-
-    gpsConnect(byte rxPin, byte txPin) : mySerial(rxPin, txPin){  }
-    void setupGPS(int);
-    void run();
-    void publishMsg(char[], int);
-    void printMsg(char[], int );
-    void requestMsg(char );
-    void changeRateMsg(char, int );    
-
-  
-  private:
     int get_checksum(char*, int);
     void checksum_hex_to_ascii(int, char*);
     boolean confirm_checksum(char*, int);
@@ -50,17 +55,13 @@ class gpsConnect {
     void parse_element(int, char*, int);
     void print_gps_data();
     void sendMsg(char, int, int);
+}; // GPS CONNECT CLASS END
 
-};
-
-// GLOBAL CONSTANTS
-#define SERIAL_BAUDRATE      9600  // data rate of connection between Arduino and computer
-#define GPS_SERIAL_BAUDRATE  4800  // data rate of connection between Arduino and computer
-#define HRMI_I2C_ADDR        127   // IC2 address of the HRMI interface
 
 // GLOBAL VARIABLES
 byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
-unsigned long intervalTime = 150;
+unsigned long currentTime = millis();
+unsigned long intervalTime = 75;
 unsigned long intervalStart;
 
 // heart rate variables
@@ -85,17 +86,19 @@ int buttonVal[2] = {0, 0};
 int ledVal = 0;
 
 // button process variables
-long intervalMin = 2000;
-long intervalMax = 2000;
+long intervalMin = 1500;
+long intervalMax = 6000;
 unsigned long intervalCurrent[] = {0, 0};
 int previousState[] = {LOW, LOW};
-boolean checkRead[2][3] = {false, false, false, false, false, false};
+int checkRead[2][3] = {0, 0, 0, 0, 0, 0};
 boolean positiveNegative[] = {false, false};
 
 // GPS Variables
 gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
 unsigned long gpsStart;
 
+
+/** SETUP FUNCTION **/
 void setup() {
   hrmi_open();                                                           // Initialize the I2C communication 
   Serial.begin(SERIAL_BAUDRATE);                                      // Initialize the serial interface 
@@ -110,12 +113,8 @@ void setup() {
   gpsStart = millis();
 
   // Print to serial the title of each data column
-  Serial.print("time, ");
-  Serial.print("gsr, "); 
-  Serial.print("heart beat, ");
-  Serial.print("accel x, accel y, accel z, "); 
-  Serial.print("button 1, ");
-  Serial.print("button 2, ");
+  print_titles();
+  
   delay(1000);
 }
 
@@ -123,19 +122,25 @@ void setup() {
 /** LOOP FUNCTION **/
 void loop() {
 
+  timeRead();
+  myGPS.readGPS();
   for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
   controlLights();    
 
   // if ready2read equals true then read heart rate and gsr data and print all data to serial 
+  /*
   if (ready2read()) {
-    timeReadWrite();
+    timeWrite();
     gsrReadWrite();  
     heartBeatReadWrite();
     for (int i = 0; i < 3; i++) { analogInputReadWrite(i); }
-    for (int i = 0; i < 2; i++) { buttonReadWrite(i); }
+    for (int i = 0; i < 2; i++) { buttonReadWrite(i); }    
+    print_gps_data();
     Serial.println(); 
   }
-  myGPS.run();
+  */
+
+
 }
 
 
