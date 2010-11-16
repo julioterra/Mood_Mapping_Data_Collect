@@ -105,20 +105,20 @@ void gpsConnect::read_msg(char newChar) {
  ************/
 void gpsConnect::parse_msg() {
     // parse all elements into the appropriate variables
-    parse_element(GGAtimeLoc, timeStamp, sizeof(timeStamp));
-    parse_element(GGAlattitudeLoc, lattitude, sizeof(lattitude));
-    parse_element(GGAlongitudeLoc, longitude, sizeof(longitude));
+    parse_element_complex(RMCtimeOrderPos, timeStamp, sizeof(timeStamp));
+    parse_element_complex(RMCdateOrderPos, dateStamp, sizeof(dateStamp));
+    parse_element_complex(RMCgpsStatusOrderPos, gpsStatus, sizeof(gpsStatus));
+    parse_element_complex(RMClattitudeOrderPos, lattitude, sizeof(lattitude));
+    parse_element_complex(RMCsouthNorthOrderPos, northSouth, sizeof(northSouth));
+    parse_element_complex(RMClongitudeOrderPos, longitude, sizeof(longitude));
+    parse_element_complex(RMCeastWestOrderPos, eastWest, sizeof(eastWest));
+
     if (nmeaMsg[GGAfixValidLoc] == '1' || nmeaMsg[GGAfixValidLoc] == '2') { 
         for (int i = 0; i < sizeof(timeStamp); i++) lastValidReading[i] = timeStamp[i]; }
     else { locValid = false; }
 
     newData = true;
 
-    /***************************
-     * REMOVE PRINT ELEMENTS ONCE CODE IS UPDATED
-     ***************************/
-//    print_gps_data();
-//    Serial.println();
 
 }
 
@@ -133,4 +133,22 @@ void gpsConnect::parse_element(int indexLoc, char *elementArray, int arrayLength
 }
 
 
+/***********************************************************************
+ * PARSE ELEMENT COMPLEX FUNCTION - parses individual elements from any messages
+ * when provided with position of the data element, and an array
+ * pointer to where the data will be saved
+ ************/
+void gpsConnect::parse_element_complex(int elementNumber, char *elementArray, int arrayLength) {
+   int startPos = -1;
+   int dataPos = 0;
+
+   for(int i = 0; i < NMEAmsgArrayLength; i++) { 
+      if (dataPos == elementNumber && nmeaMsg[i] != ',') { elementArray[i - startPos] = nmeaMsg[i]; }
+      if (nmeaMsg[i] == ',') {
+          dataPos ++; 
+          if (dataPos == elementNumber) startPos = i + 1;
+      }
+      if (dataPos > elementNumber) return;
+ }   
+}
 

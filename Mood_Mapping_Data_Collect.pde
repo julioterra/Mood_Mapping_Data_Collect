@@ -12,10 +12,20 @@
 #define rateRequestRateFirst     15
 #define rateRequestRateSecond    16
 
+#define NMEAmsgArrayLength       300
+
 #define GGAtimeLoc               7
 #define GGAlattitudeLoc          18
 #define GGAlongitudeLoc          30
 #define GGAfixValidLoc           43
+
+#define RMCtimeOrderPos          1
+#define RMCgpsStatusOrderPos     2
+#define RMClattitudeOrderPos     3
+#define RMCsouthNorthOrderPos    4
+#define RMClongitudeOrderPos     5
+#define RMCeastWestOrderPos      6
+#define RMCdateOrderPos          9
 
 #define heartRateThreshold       95
 
@@ -25,9 +35,13 @@ class gpsConnect {
    
   public:
     // variables for printing out data from GPS
-    char lattitude[11];
-    char longitude[12];
+    char gpsStatus[1];
+    char lattitude[9];
+    char northSouth[1];
+    char longitude[10];
+    char eastWest[1];
     char timeStamp[10];
+    char dateStamp[6];
     boolean locValid;
     char lastValidReading[10];
     boolean newData;
@@ -42,7 +56,7 @@ class gpsConnect {
   
   private:
     // variables for reading in data from GPS
-    char nmeaMsg[300];
+    char nmeaMsg[NMEAmsgArrayLength];
     int msgIndex;
     char checksumMsg[2];
     int checksumIndex;
@@ -55,6 +69,7 @@ class gpsConnect {
     void read_msg(char);
     void parse_msg();
     void parse_element(int, char*, int);
+    void parse_element_complex(int, char*, int);
     void print_gps_data();
     void sendMsg(char, int, int);
 }; // GPS CONNECT CLASS END

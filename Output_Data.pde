@@ -88,25 +88,32 @@ void print_gps_data() {
     // print all data elements on the serial port
     if (myGPS.newData) {
         publishMsg(myGPS.timeStamp, sizeof(myGPS.timeStamp));
+        publishMsg(myGPS.dateStamp, sizeof(myGPS.dateStamp));
+        publishMsg(myGPS.gpsStatus, sizeof(myGPS.gpsStatus));
         publishMsg(myGPS.lattitude, sizeof(myGPS.lattitude));
+        publishMsg(myGPS.northSouth, sizeof(myGPS.northSouth));
         publishMsg(myGPS.longitude, sizeof(myGPS.longitude));
-        publishMsg(myGPS.lastValidReading, sizeof(myGPS.lastValidReading));
+        publishMsg(myGPS.eastWest, sizeof(myGPS.eastWest));
         myGPS.newData = false;
     } else {
-        char tempData [1] = {'0'};
-        publishMsg(tempData, 1);
-        publishMsg(tempData, 1);
-        publishMsg(tempData, 1);
-        publishMsg(tempData, 1);
+        char tempData [2] = {' ' , '0'};
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        publishMsg(tempData, sizeof(tempData));
+        
     } 
 }
 
 
 // OUTPUT CODE: publish the proper message to the serial port for logging
-void publishMsg(char msg[], int len) {
+void publishMsg(char *msg, int len) {
       for(int i = 0; i < len; i++) {
-          if(msg[i] != byte(13)) Serial.print(msg[i]); 
-          else break;
+          if(msg[i] == byte(13)) break;
+          Serial.print(msg[i]);           
       }
       Serial.print(',');
 }
