@@ -87,12 +87,27 @@ class gpsConnect {
   int numRspBytes;                  // Number of Response bytes to read
   int HRCount = -1;                 // number assigned to each heart rate (cycles every 200 beats)
   int heartRateReadStatus = -1;
+  int analogReadStatus = -1;
   byte i2cAnalogArray[1];           // I2C response array for analog values, sized for single reading 
   
   // Variables that control the heart rate alert (lights and vibrator)
+  #define inputRequestMinInterval         2400000
+  #define inputRequestIntervalBandwidth   2400000
+  #define inputRequestRespondTime         60000
+  #define inputResponseLength             5000
+
   boolean heartRateAlert = false;
-  long unsigned previousHeartRateAlert = 0;
+  long unsigned lastHeartRateAlert = 0;
   long unsigned heartRateAlertInterval = 3600000;
+
+  long unsigned lastInputRequestTime = 0;
+  long unsigned nextInputRequestTime = 0;
+  boolean inputRequestFlag = false;
+  boolean listenForButton = false;
+  boolean confirmButtonDataRead = false;
+  
+  long unsigned inputResponseStartTime = 0;
+  boolean inputResponseStarted = false;
   
   // pin assignments
   // analog pins 4 and 5 are used for wire connection to HRMI
@@ -145,7 +160,7 @@ void setup() {
   gpsStart = millis();
 
   // Print to serial the title of each data column
-  print_titles();
+  titlesWrite();
   
   delay(1000);
 }
@@ -153,24 +168,23 @@ void setup() {
 
 /** LOOP FUNCTION **/
 void loop() {
-  timeRead();
-  myGPS.readGPS();
-  for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
-  controlLights();    
-
-  // if ready2read equals true then read heart rate and gsr data and print all data to serial 
-  if (ready2read()) {
-    gsrRead();  
-    heartBeatRead();
-    for (int i = 0; i < 3; i++) { analogInputReadWrite(i); }
+    timeRead();
+    myGPS.readGPS();
+    controlLights();    
   
-    timeWrite();
-    gsrWrite();  
-    heartBeatWrite();
-//    for (int i = 0; i < 2; i++) { buttonWrite(i); }
-    print_gps_data();
-    Serial.println(); 
-  }
+    // if ready2read equals true then read heart rate and gsr data and print all data to serial 
+    if (ready2read()) {
+        gsrRead();  
+        heartBeatRead();
+        buttonsResponseRead();
+        
+        timeWrite();
+        gsrWrite();  
+        heartBeatWrite();
+        buttonsWrite();
+        gpsWrite();
+        Serial.println(); 
+    }
 
 }
 

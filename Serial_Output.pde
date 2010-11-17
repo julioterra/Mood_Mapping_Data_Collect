@@ -88,7 +88,10 @@ void buttonsWrite() {
         if(buttonWrite(i)) buttonStatus = true; 
     }
     if (!buttonStatus) {
-       if (listenForButton) Serial.print("R");
+       if (listenForButton) {
+           if (heartRateAlert) Serial.print("H");
+           else Serial.print("R");
+       }
        else Serial.print("0");
     }
     Serial.print(", ");    
@@ -96,7 +99,7 @@ void buttonsWrite() {
 
 
 // BUTTON WRITE: read and print
-boolean buttonWrite (int buttonNum) {
+boolean buttonWrite(int buttonNum) {
   if(positiveNegative[buttonNum]) {
       if (buttonNum == 0) { Serial.print("P"); }
       if (buttonNum == 1) { Serial.print("N"); }
@@ -105,11 +108,9 @@ boolean buttonWrite (int buttonNum) {
       }
       return true;
   } 
-  return false;
-  // else {  Serial.print("0"); }
-  // Serial.print(", "); 
-  
+  return false;  
 }
+
 
 // OUTPUT CODE: publish the proper message to the serial port for logging
 void publishMsg(char *msg, int len) {
