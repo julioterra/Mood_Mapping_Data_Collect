@@ -75,7 +75,6 @@ class gpsConnect {
 }; // GPS CONNECT CLASS END
 
 
-
   // GLOBAL VARIABLES
   byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
   unsigned long currentTime = millis();
@@ -87,11 +86,14 @@ class gpsConnect {
   int numEntries = 3;               // Number of HR values to request 
   int numRspBytes;                  // Number of Response bytes to read
   int HRCount = -1;                 // number assigned to each heart rate (cycles every 200 beats)
-  int heartRateReadStatus = -1;     // holds a -1 if arduino not able to connect to hrmi device to read heart rate data
-
+  int heartRateReadStatus = -1;
   byte i2cAnalogArray[1];           // I2C response array for analog values, sized for single reading 
-  int analogReadStatus = -1;
-    
+  
+  // Variables that control the heart rate alert (lights and vibrator)
+  boolean heartRateAlert = false;
+  long unsigned previousHeartRateAlert = 0;
+  long unsigned heartRateAlertInterval = 3600000;
+  
   // pin assignments
   // analog pins 4 and 5 are used for wire connection to HRMI
   int gsrPin = 0;
@@ -104,23 +106,6 @@ class gpsConnect {
   int buttonVal[2] = {0, 0};
   int ledVal = 0;
   
-  // Variables that control input requests (lights and vibrator)
-  boolean inputRequestFlag = false;                           // flag that identifies when an input request is triggered
-  boolean listenForButton = false;
-  unsigned long inputRequestRandomDelay;
-  unsigned long nextInputRequestTime = 0;                 // time when input request started
-  unsigned long lastInputRequestTime = nextInputRequestTime;
-
-  boolean heartRateAlert = false;                         // flag that identifies when a hear rate alert is triggered
-  long unsigned lastHeartRateAlert = 0;               // holds time of the previous heart rate alert
-
-  #define inputRequestMinInterval          30000        // the minimum amount of time between input requests
-  #define inputRequestIntervalBandwidth    30000        // the amount of time that input request can alternate (40 minutes in millis)
-//  #define inputRequestMinInterval          2400000        // the minimum amount of time between input requests
-//  #define inputRequestIntervalBandwidth    2400000        // the amount of time that input request can alternate (40 minutes in millis)
-  #define heartRateAlertInterval           3600000        // a one hour interval between each hear rate alert  
-  #define inputInterval                    45000          // amount of time during which user can respond to an input request
-
   // button process variables
   long intervalMin = 1500;                      // minimum length of time between the button-presses used to capture emotions 
   long intervalMax = 4500;                      // maximum length of time between the button-presses used to capture emotions 
@@ -130,16 +115,14 @@ class gpsConnect {
   boolean positiveNegative[] = {false, false};  // holds whether button press event has been accomplished fully
   long emotionRecordTime = 0;                   // time when emotion activity was recorded (button-press sequence successfully completed)
   long emotionReportTime = 1000;                // length of time that emotion flag should be displayed
-
-  int lastButtonState[] = {LOW, LOW};             // previous of button for capturing button-press events  
-  long buttonPressTime = 0;
-  long buttonPressLength = 5000;
   
   // light and vibration control variables
   long lightVibPulseLength = 400;                     // length of light and vibrarion pulse when a button-push sequence is recorded
   long previousLightVibPulse = 0;
   int lightVibCount = 0;
-  boolean confirmButtonDataRead = false;
+  int lightVibConfirmCount = 4;
+  int lightVibRequestCount = 10;
+  boolean lightVibConfirmStart = false;
   boolean vibPulseState = false;
   
   // GPS Variables
@@ -147,54 +130,49 @@ class gpsConnect {
   unsigned long gpsStart;
 
 
-/********************/
 /** SETUP FUNCTION **/
 void setup() {
-    hrmi_open();                                                           // Initialize the I2C communication 
-    Serial.begin(SERIAL_BAUDRATE);                                      // Initialize the serial interface 
-    myGPS.setupGPS(GPS_SERIAL_BAUDRATE);
+  hrmi_open();                                                           // Initialize the I2C communication 
+  Serial.begin(SERIAL_BAUDRATE);                                      // Initialize the serial interface 
+  myGPS.setupGPS(GPS_SERIAL_BAUDRATE);
+
+  pinMode(buttonPin[0], INPUT);
+  pinMode(buttonPin[1], INPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(vibratePin, OUTPUT);
+
+  intervalStart = millis();
+  gpsStart = millis();
+
+  // Print to serial the title of each data column
+  print_titles();
   
-    pinMode(buttonPin[0], INPUT);
-    pinMode(buttonPin[1], INPUT);
-    pinMode(ledPin, OUTPUT);
-    pinMode(vibratePin, OUTPUT);
-  
-    intervalStart = millis();
-    gpsStart = millis();
-    nextInputRequestTime = random(inputRequestIntervalBandwidth) + inputRequestMinInterval;
-  
-    // Print to serial the title of each data column
-    titlesWrite();
-    
-    delay(1000);
+  delay(1000);
 }
-/********************/
 
 
-
-/*******************/
 /** LOOP FUNCTION **/
 void loop() {
-    timeRead();
-    myGPS.readGPS();
-    inputRequestCheck();
+  timeRead();
+  myGPS.readGPS();
+  for (int i = 0; i < 2; i++) { buttonsReadProcess(i); }
+  controlLights();    
+
+  // if ready2read equals true then read heart rate and gsr data and print all data to serial 
+  if (ready2read()) {
+    gsrRead();  
+    heartBeatRead();
+    for (int i = 0; i < 3; i++) { analogInputReadWrite(i); }
   
-    // if ready2read equals true then read heart rate and gsr data and print all data to serial 
-    if (ready2read()) {
-        for (int i = 0; i < 2; i++) { buttonResponseRead(i); }
-        gsrRead();  
-        heartBeatRead();
-      
-        timeWrite();
-        gsrWrite();  
-        heartBeatWrite();
-        buttonsWrite();
-        gpsWrite();
-        Serial.println(); 
-    }
-    controlLights();      
+    timeWrite();
+    gsrWrite();  
+    heartBeatWrite();
+//    for (int i = 0; i < 2; i++) { buttonWrite(i); }
+    print_gps_data();
+    Serial.println(); 
+  }
+
 }
-/********************/
 
 
 boolean ready2read () {
