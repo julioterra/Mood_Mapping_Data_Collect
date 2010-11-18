@@ -91,6 +91,7 @@ class gpsConnect {
   byte i2cAnalogArray[1];           // I2C response array for analog values, sized for single reading 
   
   // Variables that control the heart rate alert (lights and vibrator)
+
   #define inputRequestMinInterval         2400000
   #define inputRequestIntervalBandwidth   2400000
   #define inputRequestRespondTime         60000
@@ -129,7 +130,7 @@ class gpsConnect {
   int checkRead[2][3] = {0, 0, 0, 0, 0, 0};     // holds status of individual button-press events to confirm if full sequence has been done correctly
   boolean positiveNegative[] = {false, false};  // holds whether button press event has been accomplished fully
   long emotionRecordTime = 0;                   // time when emotion activity was recorded (button-press sequence successfully completed)
-  long emotionReportTime = 1000;                // length of time that emotion flag should be displayed
+  long emotionReportTime = 2000;                // length of time that emotion flag should be displayed
   
   // light and vibration control variables
   long lightVibPulseLength = 400;                     // length of light and vibrarion pulse when a button-push sequence is recorded
@@ -158,7 +159,8 @@ void setup() {
 
   intervalStart = millis();
   gpsStart = millis();
-
+  nextInputRequestTime = random(inputRequestIntervalBandwidth);
+  
   // Print to serial the title of each data column
   titlesWrite();
   
@@ -170,13 +172,15 @@ void setup() {
 void loop() {
     timeRead();
     myGPS.readGPS();
-    controlLights();    
   
     // if ready2read equals true then read heart rate and gsr data and print all data to serial 
     if (ready2read()) {
+        inputRequestCheck();
+        controlLights();    
+        buttonsResponseRead();
+        
         gsrRead();  
         heartBeatRead();
-        buttonsResponseRead();
         
         timeWrite();
         gsrWrite();  

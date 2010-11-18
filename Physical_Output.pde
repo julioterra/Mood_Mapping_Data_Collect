@@ -13,6 +13,8 @@ void inputRequestCheck() {
              inputRequestFlag = true;
              listenForButton = true;
              lastHeartRateAlert = millis();
+             lastInputRequestTime = millis(); 
+             nextInputRequestTime = random(inputRequestIntervalBandwidth) + inputRequestMinInterval + millis();
         }
     }
 }
@@ -24,11 +26,15 @@ void controlLights () {
   int requestVibLight = 3;
 
   if (inputRequestFlag) {
-      if (light_vibration_alert(requestVibLight)) { inputRequestFlag = false; }
+      if (light_vibration_alert(requestVibLight)) { 
+          inputRequestFlag = false; 
+      }
   }
 
   if (confirmButtonDataRead) {
-      if(light_vibration_alert(confirmVibLight)) { confirmButtonDataRead = false; }
+      if(light_vibration_alert(confirmVibLight)) { 
+          confirmButtonDataRead = false; 
+      }
    }
 }
 
@@ -36,7 +42,6 @@ void controlLights () {
 // LIGHT VIBRATION ALERT FUNCTION
 boolean light_vibration_alert(int _totalPulses) {
     int totalPulses = _totalPulses;
-    
     if (lightVibCount == totalPulses) { 
         vibPulseState = false;
         lightVibCount = 0; 

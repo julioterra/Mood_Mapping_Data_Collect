@@ -103,9 +103,7 @@ boolean buttonWrite(int buttonNum) {
   if(positiveNegative[buttonNum]) {
       if (buttonNum == 0) { Serial.print("P"); }
       if (buttonNum == 1) { Serial.print("N"); }
-      if (currentTime - emotionRecordTime > emotionReportTime) { 
-          positiveNegative[buttonNum] = false; 
-      }
+      if (millis() - emotionRecordTime > emotionReportTime) { positiveNegative[buttonNum] = false; }
       return true;
   } 
   return false;  

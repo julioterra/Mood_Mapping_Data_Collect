@@ -40,22 +40,31 @@ void buttonsResponseRead () {
 
 void buttonResponseRead(int buttonNum) {  
   if (listenForButton) {
+    Serial.println("waiting for button input");
+
       buttonVal[buttonNum] = digitalRead(buttonPin[buttonNum]);
-      if(buttonVal[buttonNum] == HIGH && previousState[buttonNum] == LOW) {
-          inputResponseStartTime = millis();
-          inputResponseStarted = true; 
-      } else if (buttonVal[buttonNum] == HIGH && previousState[buttonNum] == HIGH) {
-          if(millis() - inputResponseStartTime > inputResponseLength) { 
-              confirmButtonDataRead = true;
-              positiveNegative[buttonNum] = true;
-              emotionRecordTime = currentTime;
+      if(buttonVal[buttonNum] == HIGH) {
+          if (previousState[buttonNum] == LOW) {
+              inputResponseStartTime = millis();
+              inputResponseStarted = true; 
+              previousState[buttonNum] = HIGH;
+          } else if (previousState[buttonNum] == HIGH) { 
+               if(millis() - inputResponseStartTime > inputResponseLength) { 
+                   confirmButtonDataRead = true;
+                   positiveNegative[buttonNum] = true;
+                   emotionRecordTime = millis();
+                   inputResponseStarted = false;
+                   listenForButton = false;
+               }
           }
       } else {
           inputResponseStarted = false;
+          positiveNegative[buttonNum] = false;
+          previousState[buttonNum] = LOW;
       }
   } 
   
-  if (millis() - lastInputRequestTime < inputRequestRespondTime) {
+  if (millis() - lastInputRequestTime > inputRequestRespondTime) { 
       listenForButton = false;
   }
 }
