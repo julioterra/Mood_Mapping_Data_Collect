@@ -40,8 +40,6 @@ void buttonsResponseRead () {
 
 void buttonResponseRead(int buttonNum) {  
   if (listenForButton) {
-    Serial.println("waiting for button input");
-
       buttonVal[buttonNum] = digitalRead(buttonPin[buttonNum]);
       if(buttonVal[buttonNum] == HIGH) {
           if (previousState[buttonNum] == LOW) {
