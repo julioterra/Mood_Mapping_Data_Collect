@@ -11,6 +11,7 @@ void timeRead() {
 // GSR READ: read and print
 void gsrRead() {
     gsrVal = analogRead(gsrPin);
+    gsrHighpassVal = gsrFilter.apply_highpass(analogRead(gsrPin));
 }
 
 

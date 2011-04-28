@@ -2,7 +2,7 @@
 #include <NewSoftSerial.h>
 
 // GLOBAL CONSTANTS
-#define SERIAL_BAUDRATE          9600  // data rate of connection between Arduino and computer
+#define SERIAL_BAUDRATE          28800  // data rate of connection between Arduino and computer
 #define GPS_SERIAL_BAUDRATE      4800  // data rate of connection between Arduino and computer
 #define HRMI_I2C_ADDR            127   // IC2 address of the HRMI interface
 
@@ -79,12 +79,45 @@ class gpsConnect {
 // **********************
 
 
+// **********************
+// *** GPS CONNECT CLASS: Reads and parses data from the GPS unit
+// **********************
+  class GsrFilter {
+    private:
+        long timeElapsed;
+        long previousMillis;
+        int startupCounter;
+        int maxStartupCounter;
+        
+        // period over which data is smoothed - current skin resistance value
+        float dataBuffer;      
+        float smoothPeriod;
+        float maxTimeSmoothPeriod;
+        
+        // period over which average is calculated - average skin resistance value
+        float meanData;      
+        float normPeriod;
+        float maxTimeNormPeriod;      
+
+        void print_serial(String, long);
+  
+    public:
+        GsrFilter();
+        int gsr_raw;
+        float gsr_filtered;
+        float apply_highpass(unsigned int);
+        void print_all_serial();      
+  };
 
   // GLOBAL VARIABLES
   byte hrmi_addr = HRMI_I2C_ADDR;	  // I2C address to use
   unsigned long currentTime = millis();
-  unsigned long intervalTime = 200;
-  unsigned long intervalStart;
+  unsigned long writeIntervalTime = 100;
+  unsigned long writeIntervalStart;
+
+  unsigned long readIntervalTime = 20;
+  unsigned long readIntervalStart;
+
   
   // variables for reading data from hrmi
   byte i2cRspArray[34];	            // I2C response array, sized to read 32 HR values  
@@ -96,8 +129,8 @@ class gpsConnect {
   int analogReadStatus = -1;        // status variable used to flag when there is an issue with reading analog data from hrmi
   
   // Variables that control the data request and heart rate alert (lights and vibrator)
-  #define inputRequestMinInterval         2400000
-  #define inputRequestIntervalBandwidth   2400000
+  #define inputRequestMinInterval         3000000
+  #define inputRequestIntervalBandwidth   3000000
   #define inputRequestRespondTime         60000
   #define inputResponseLength             5000
 
@@ -123,6 +156,7 @@ class gpsConnect {
   
   // variables that holds values from input pins
   int gsrVal = 0;
+  float gsrHighpassVal = 0;
   
   // button process variables
   int buttonVal[] = {LOW, LOW};
@@ -144,6 +178,8 @@ class gpsConnect {
   gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
   unsigned long gpsStart;
 
+  // GSR Filter
+  GsrFilter gsrFilter = GsrFilter();
 
 // ********************
 // * SETUP FUNCTION 
@@ -159,7 +195,7 @@ void setup() {
     pinMode(ledPin, OUTPUT);
     pinMode(vibratePin, OUTPUT);
   
-    intervalStart = millis();
+    writeIntervalStart = millis();
     gpsStart = millis();
     nextInputRequestTime = random(inputRequestIntervalBandwidth);
     
@@ -177,13 +213,16 @@ void loop() {
     timeRead();
     myGPS.readGPS();
   
-    // if ready2read equals true then read heart rate and gsr data and print all data to serial 
-    if (ready2read()) {
+//    if (ready2read()) {
+        gsrRead();  
+//    }
+    
+    // if ready2write equals true then read heart rate and gsr data and print all data to serial 
+    if (ready2write()) {
         inputRequestCheck();
         controlLights();    
         buttonsResponseRead();
-        
-        gsrRead();  
+//        gsrRead();          
         heartBeatRead();
         
         timeWrite();
@@ -191,15 +230,24 @@ void loop() {
         heartBeatWrite();
         buttonsWrite();
         gpsWrite();
+        gsrHighpassWrite();
         Serial.println(); 
     }
 
 }
 
-
-boolean ready2read () {
-  if (millis() - intervalStart > intervalTime) {
-      intervalStart = millis();
+boolean ready2read() {
+  if (millis() - readIntervalStart > readIntervalTime) {
+      readIntervalStart = millis();
       return true;
-  } else { return false; }
+  } 
+  else return false;
+}
+
+boolean ready2write() {
+  if (millis() - writeIntervalStart > writeIntervalTime) {
+      writeIntervalStart = millis();
+      return true;
+  } 
+  else return false;
 }

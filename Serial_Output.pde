@@ -31,9 +31,15 @@ void timeWrite() {
 }
 
 
-// GSR READ WRITE: read and print
+// GSR WRITE: read and print
 void gsrWrite() {
     Serial.print(gsrVal);                             // print the gsr value to serial
+    Serial.print(", ");                               // add a comma
+}
+
+// GSR HIGHPASS WRITE: read and print
+void gsrHighpassWrite() {
+    Serial.print(gsrHighpassVal, 5);                  // print the gsr value to serial
     Serial.print(", ");                               // add a comma
 }
 
