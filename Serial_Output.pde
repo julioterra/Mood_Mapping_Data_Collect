@@ -65,16 +65,16 @@ void analogHRMIWrite (int _inputNumber) {
 // PRINT GPS DATA: print the gps data to the serial port
 void gpsWrite() {
     // print all data elements on the serial port
-    if (myGPS.newData) {
-        publishMsg(myGPS.timeStamp, sizeof(myGPS.timeStamp));
-        publishMsg(myGPS.dateStamp, sizeof(myGPS.dateStamp));
-        publishMsg(myGPS.gpsStatus, sizeof(myGPS.gpsStatus));
-        publishMsg(myGPS.lattitude, sizeof(myGPS.lattitude));
-        publishMsg(myGPS.northSouth, sizeof(myGPS.northSouth));
-        publishMsg(myGPS.longitude, sizeof(myGPS.longitude));
-        publishMsg(myGPS.eastWest, sizeof(myGPS.eastWest));
-        myGPS.newData = false;
-    } else {
+//    if (myGPS.newData) {
+//        publishMsg(myGPS.timeStamp, sizeof(myGPS.timeStamp));
+//        publishMsg(myGPS.dateStamp, sizeof(myGPS.dateStamp));
+//        publishMsg(myGPS.gpsStatus, sizeof(myGPS.gpsStatus));
+//        publishMsg(myGPS.lattitude, sizeof(myGPS.lattitude));
+//        publishMsg(myGPS.northSouth, sizeof(myGPS.northSouth));
+//        publishMsg(myGPS.longitude, sizeof(myGPS.longitude));
+//        publishMsg(myGPS.eastWest, sizeof(myGPS.eastWest));
+//        myGPS.newData = false;
+//    } else {
         char tempData [1] = {'0'};
         publishMsg(tempData, sizeof(tempData));
         publishMsg(tempData, sizeof(tempData));
@@ -84,7 +84,7 @@ void gpsWrite() {
         publishMsg(tempData, sizeof(tempData));
         publishMsg(tempData, sizeof(tempData));
         
-    } 
+//    } 
 }
 
 

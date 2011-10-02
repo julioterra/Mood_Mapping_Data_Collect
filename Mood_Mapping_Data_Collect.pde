@@ -2,7 +2,7 @@
 #include <NewSoftSerial.h>
 
 // GLOBAL CONSTANTS
-#define SERIAL_BAUDRATE          28800  // data rate of connection between Arduino and computer
+#define SERIAL_BAUDRATE          57600  // data rate of connection between Arduino and computer
 #define GPS_SERIAL_BAUDRATE      4800  // data rate of connection between Arduino and computer
 #define HRMI_I2C_ADDR            127   // IC2 address of the HRMI interface
 
@@ -175,8 +175,11 @@ class gpsConnect {
   boolean vibPulseState = false;
   
   // GPS Variables
-  gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
+//  gpsConnect myGPS = gpsConnect(gpsPin[0], gpsPin[1]);
   unsigned long gpsStart;
+
+  NewSoftSerial bluetooth(3, 4);
+  NewSoftSerial sd(5, 6);
 
   // GSR Filter
   GsrFilter gsrFilter = GsrFilter();
@@ -187,20 +190,20 @@ class gpsConnect {
 void setup() {
     hrmi_open();                                                  // Initialize the I2C communication 
     Serial.begin(SERIAL_BAUDRATE);                                // Initialize the serial interface 
-    myGPS.setupGPS(GPS_SERIAL_BAUDRATE);
+//    myGPS.setupGPS(GPS_SERIAL_BAUDRATE);
   
     // initialize pins
-    pinMode(buttonPin[0], INPUT);
-    pinMode(buttonPin[1], INPUT);
-    pinMode(ledPin, OUTPUT);
-    pinMode(vibratePin, OUTPUT);
+//    pinMode(buttonPin[0], INPUT);
+//    pinMode(buttonPin[1], INPUT);
+//    pinMode(ledPin, OUTPUT);
+//    pinMode(vibratePin, OUTPUT);
   
     writeIntervalStart = millis();
     gpsStart = millis();
     nextInputRequestTime = random(inputRequestIntervalBandwidth);
     
     // Print to serial the title of each data column
-    titlesWrite();
+    // titlesWrite();
     
     delay(1000);
 }
@@ -211,7 +214,7 @@ void setup() {
 // ********************
 void loop() {
     timeRead();
-    myGPS.readGPS();
+//    myGPS.readGPS();
   
 //    if (ready2read()) {
         gsrRead();  
@@ -219,9 +222,9 @@ void loop() {
     
     // if ready2write equals true then read heart rate and gsr data and print all data to serial 
     if (ready2write()) {
-        inputRequestCheck();
-        controlLights();    
-        buttonsResponseRead();
+//        inputRequestCheck();
+//        controlLights();    
+//        buttonsResponseRead();
 //        gsrRead();          
         heartBeatRead();
         
