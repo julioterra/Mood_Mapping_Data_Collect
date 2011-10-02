@@ -214,20 +214,11 @@ void setup() {
 // ********************
 void loop() {
     timeRead();
-//    myGPS.readGPS();
-  
-//    if (ready2read()) {
         gsrRead();  
-//    }
     
     // if ready2write equals true then read heart rate and gsr data and print all data to serial 
     if (ready2write()) {
-//        inputRequestCheck();
-//        controlLights();    
-//        buttonsResponseRead();
-//        gsrRead();          
         heartBeatRead();
-        
         timeWrite();
         gsrWrite();  
         heartBeatWrite();
